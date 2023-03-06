@@ -1,0 +1,77 @@
+
+--The global data on confirmed COVID-19 deaths.
+--Data Source (https://ourworldindata.org/covid-deaths)
+--Below, all queries have been executed successfully in Bigquery.
+
+SELECT *
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+ORDER BY 3, 4
+
+SELECT *
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Vaccination_Details`
+ORDER BY 3, 4
+
+--Selecting data to start with
+
+SELECT location, date, total_cases, new_cases, total_deaths, population
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+WHERE continent IS NOT NULL
+ORDER BY 1, 2
+
+--Calculating Total Cases Vs Total Death, as well as the death percentage if you get covid in your country.
+
+SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)* 100 AS Percentage_Of_Death
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+WHERE continent IS NOT NULL
+AND location = 'India'
+ORDER BY 1, 2
+
+--Calculating Total Cases vs Population
+--Below syntax shows what percentage of population in a country is infected with COVID
+
+SELECT location, date, population,total_cases, (total_cases/population)* 100 AS Percentage_Population_Infected
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+WHERE continent IS NOT NULL
+ORDER BY 1, 2
+
+--Finding countries with Highest Infection Rate compared to it's Population
+
+SELECT location, population, MAX(total_cases) AS Highest_Infection_Count, MAX((total_cases/population))* 100 AS Percentage_Population_Infected
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+WHERE continent IS NOT NULL
+GROUP BY location, population
+ORDER BY Percentage_Population_Infected DESC
+
+--Finding countries with Highest Death Count per Population
+
+SELECT location, MAX(total_deaths) AS Count_TotalDeath
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+WHERE continent IS NOT NULL
+GROUP BY location
+ORDER BY Count_TotalDeath DESC
+
+--Breaking things down by CONTINENT
+--Finding contintents with the highest death count per population
+
+SELECT continent, MAX(total_deaths) AS Count_TotalDeath
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+WHERE continent IS NOT NULL
+GROUP BY continent
+ORDER BY Count_TotalDeath DESC
+
+--Total Global Covid Death Number
+
+SELECT SUM(new_cases) AS Total_Cases, SUM(new_deaths) AS Total_Deaths, SUM(new_deaths)/SUM(new_cases)*100 AS Total_GLobal_Death
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data`
+WHERE continent IS NOT NULL
+
+--Looking at Total Population vs Vaccinations
+--Also looking at the number of people vaccinated over a period of time
+
+SELECT DEA.continent, DEA.location, DEA.date, DEA.population, VAC.new_vaccinations, SUM(VAC.new_vaccinations) OVER (PARTITION BY DEA.location ORDER BY DEA.location,DEA.date) AS Population_Vaccinated
+FROM `celtic-defender-370222.Covid_Vaccination.Covid_Death_Data` AS DEA
+JOIN `celtic-defender-370222.Covid_Vaccination.Covid_Vaccination_Details` AS VAC
+  ON DEA.location = VAC.location
+  AND DEA.date = VAC.date
+WHERE DEA.continent IS NOT NULL
+ORDER BY 2, 3
